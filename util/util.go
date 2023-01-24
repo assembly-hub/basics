@@ -56,14 +56,6 @@ func IntToStr[T intType](i T) string {
 	return strconv.FormatInt(int64(i), 10)
 }
 
-func Str2Uint[T intType](s string) (T, error) {
-	i, err := strconv.ParseUint(s, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return T(i), nil
-}
-
 func Str2IntArr[T intType](s string, sep string) ([]T, error) {
 	arr := strings.Split(s, sep)
 	arrLen := len(arr)
@@ -83,6 +75,14 @@ func Str2IntArr[T intType](s string, sep string) ([]T, error) {
 
 type uintType interface {
 	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
+
+func Str2Uint[T uintType](s string) (T, error) {
+	i, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return T(i), nil
 }
 
 func UintToStr[T uintType](i T) string {
