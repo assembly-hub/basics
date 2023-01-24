@@ -2,10 +2,7 @@ module github.com/assembly-hub/basics
 
 go 1.19
 
-require (
-	github.com/go-redis/redis/v8 v8.11.4
-	github.com/gorilla/websocket v1.5.0
-)
+require github.com/go-redis/redis/v8 v8.11.4
 
 require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
