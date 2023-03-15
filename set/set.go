@@ -4,11 +4,29 @@ package set
 // Set string set
 type Set[T comparable] map[T]struct{}
 
+func New[T comparable]() Set[T] {
+	return Set[T]{}
+}
+
 func (s Set[T]) Add(keyList ...T) Set[T] {
 	for _, k := range keyList {
 		s[k] = struct{}{}
 	}
 	return s
+}
+
+func (s Set[T]) Copy() Set[T] {
+	set := make(Set[T], len(s))
+	for k := range s {
+		set[k] = struct{}{}
+	}
+	return set
+}
+
+func (s Set[T]) Clear() {
+	for k := range s {
+		delete(s, k)
+	}
 }
 
 func (s Set[K]) Has(key K) bool {
@@ -19,9 +37,7 @@ func (s Set[K]) Has(key K) bool {
 
 func (s Set[T]) Del(keyList ...T) Set[T] {
 	for _, k := range keyList {
-		if s.Has(k) {
-			delete(s, k)
-		}
+		delete(s, k)
 	}
 	return s
 }
@@ -87,5 +103,20 @@ func (s Set[T]) Difference(other Set[T]) Set[T] {
 			newSet.Add(k)
 		}
 	}
+	return newSet
+}
+
+// SymmetricDifference 异或集
+func (s Set[T]) SymmetricDifference(other Set[T]) Set[T] {
+	newSet := s.Copy()
+	var needDel []T
+	for k := range other {
+		if !newSet.Has(k) {
+			newSet.Add(k)
+		} else {
+			needDel = append(needDel, k)
+		}
+	}
+	newSet.Del(needDel...)
 	return newSet
 }
