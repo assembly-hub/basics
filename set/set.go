@@ -50,6 +50,15 @@ func (s Set[T]) Empty() bool {
 	return s.Size() == 0
 }
 
+// Range 遍历集合，func(item T) bool 函数发生异常或返回false终止遍历
+func (s Set[T]) Range(f func(item T) bool) {
+	for k := range s {
+		if !f(k) {
+			break
+		}
+	}
+}
+
 func (s Set[T]) ToList() []T {
 	if len(s) <= 0 {
 		return nil
