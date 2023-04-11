@@ -4,7 +4,6 @@ package util
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"runtime/debug"
@@ -275,14 +274,15 @@ func Difference[T comparable](arr1 []T, arr2 []T) []T {
 
 // JoinArr 链接数组
 func JoinArr[T any](arr []T, linkStr string) string {
-	ret := ""
+	var ret strings.Builder
 	if len(arr) >= 1 {
-		ret = InterfaceToString(arr[0])
+		ret.WriteString(InterfaceToString(arr[0]))
 	}
 	for i, lenArr := 1, len(arr); i < lenArr; i++ {
-		ret += linkStr + InterfaceToString(arr[i])
+		ret.WriteString(linkStr)
+		ret.WriteString(InterfaceToString(arr[i]))
 	}
-	return ret
+	return ret.String()
 }
 
 // GetMapValue 获取map数据
@@ -399,16 +399,21 @@ func ParamsSorted[V any](params map[string]V) string {
 
 	sort.Strings(keys)
 
-	ret := ""
+	var ret strings.Builder
 	for ii, k := range keys {
 		if ii == 0 {
-			ret = fmt.Sprintf("%s=%v", k, params[k])
+			ret.WriteString(k)
+			ret.WriteByte('=')
+			ret.WriteString(InterfaceToString(params[k]))
 		} else {
-			ret += fmt.Sprintf("&%s=%v", k, params[k])
+			ret.WriteByte('&')
+			ret.WriteString(k)
+			ret.WriteByte('=')
+			ret.WriteString(InterfaceToString(params[k]))
 		}
 	}
 
-	return ret
+	return ret.String()
 }
 
 // ArrSplit 按照给定的子数组长度进行数组切分，返回二维数组
@@ -451,7 +456,7 @@ func NumArrTransfer[T1 numType, T2 numType](arr []T1) []T2 {
 		return nil
 	}
 
-	ret := make([]T2, len(arr))
+	ret := make([]T2, 0, len(arr))
 	for _, v := range arr {
 		ret = append(ret, T2(v))
 	}
@@ -484,19 +489,20 @@ func HumpFormatToUnderLine(s string) string {
 		}
 	}
 
-	newStr := ""
+	var newStr strings.Builder
 	prefixIndex := 0
 	for _, i := range index {
-		if newStr != "" {
-			newStr += "_"
+		if newStr.Len() > 0 {
+			newStr.WriteByte('_')
 		}
 
-		newStr += lowerStr[prefixIndex:i]
+		newStr.WriteString(lowerStr[prefixIndex:i])
 		prefixIndex = i
 	}
 
-	newStr += "_" + lowerStr[prefixIndex:]
-	return strings.TrimLeft(newStr, "_")
+	newStr.WriteByte('_')
+	newStr.WriteString(lowerStr[prefixIndex:])
+	return strings.TrimLeft(newStr.String(), "_")
 }
 
 // MapHumpFormatToUnderLine map key 驼峰转下滑线命名
