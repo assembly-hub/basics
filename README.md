@@ -1,6 +1,4 @@
-# 1、basics
-
-golang基础库，常用的功能
+# 1、golang基础库，常用的功能
 
 1. redis扩展功能，集群锁、资源控制器等
 2. set工具包含：add、has、del，交、差、并计算等
@@ -14,8 +12,8 @@ golang基础库，常用的功能
 ```go
 // int类型
 e := New[struct {
-First  Elem[int] `code:"1" text:"123"`
-Second Elem[int] `code:"2" text:"123"`
+    First  Elem[int] `code:"1" text:"123"`
+    Second Elem[int] `code:"2" text:"123"`
 }]()
 
 fmt.Println(Code2Text[int](e))
@@ -23,8 +21,8 @@ fmt.Println(e.First.Code, e.First.Text)
 
 // string类型
 e := New[struct {
-First  Elem[string] `code:"1" text:"123"`
-Second Elem[string] `code:"2" text:"123"`
+    First  Elem[string] `code:"1" text:"123"`
+    Second Elem[string] `code:"2" text:"123"`
 }]()
 
 fmt.Println(Code2Text[string](e))
@@ -46,7 +44,7 @@ defer r.Close()
 
 lockKey := "test_key"
 r.WithLock(lockKey, nil, 10, 3, 500, func () {
-fmt.Println("ok")
+    fmt.Println("ok")
 })
 ```
 
@@ -72,7 +70,7 @@ fmt.Println("SymmetricDifference: ", s1.SymmetricDifference(s2).ToList())
 ```go
 uu, err := NewV4()
 if err != nil {
-fmt.Println(err.Error())
+    fmt.Println(err.Error())
 }
 
 fmt.Println(uu.String())
@@ -83,24 +81,22 @@ fmt.Println(uu.String())
 ```go
 wp := NewWorkPool(100, "test", 0, 50)
 for i := 0; i < 100; i++ {
-wp.SubmitJob(&JobBag{
-JobFunc: func (i ...interface{}) {
-if i[0].(int)%2 == 0 {
-// panic(fmt.Errorf("1111111111111"))
-}
-fmt.Println("------------", i[0])
-// time.Sleep(time.Second * 1)
-
-},
-Params: []interface{}{i},
-})
+    wp.SubmitJob(&JobBag{
+        JobFunc: func (i ...interface{}) {
+            if i[0].(int)%2 == 0 {
+            // panic(fmt.Errorf("1111111111111"))
+            }
+            fmt.Println("------------", i[0])
+        },
+        Params: []interface{}{i},
+    })
 }
 
 for {
-if wp.IsFinished() {
-break
-}
-time.Sleep(time.Millisecond * 10)
+    if wp.IsFinished() {
+        break
+    }
+    time.Sleep(time.Millisecond * 10)
 }
 wp.ShutDownPool()
 fmt.Println("done")
