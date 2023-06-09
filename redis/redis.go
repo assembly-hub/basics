@@ -28,6 +28,16 @@ func NewRedisWithCtx(ctx context.Context, opt *Options) *Redis {
 	return r
 }
 
+func FromV8(cli *v8.Client) *Redis {
+	r := new(Redis)
+	r.cli = cli
+	r.opt = &Options{
+		*cli.Options(),
+	}
+	r.ctx = context.Background()
+	return r
+}
+
 func (r *Redis) RawRedis() *v8.Client {
 	return r.cli
 }

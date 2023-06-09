@@ -3,7 +3,6 @@ package redis
 
 import (
 	"context"
-	"log"
 	"net"
 	"runtime"
 	"time"
@@ -59,7 +58,6 @@ var defaultOpts = Options{
 
 		//钩子函数
 		OnConnect: func(ctx context.Context, conn *v8.Conn) error { //仅当客户端执行命令时需要从连接池获取连接时，如果连接池需要新建连接时则会调用此钩子函数
-			log.Printf("redis conn=%v\n", conn)
 			return nil
 		},
 	},

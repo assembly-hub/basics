@@ -1,7 +1,6 @@
 package enum
 
 import (
-	"log"
 	"reflect"
 
 	"github.com/assembly-hub/basics/set"
@@ -26,13 +25,11 @@ func New[T any]() *T {
 func loadEnumData(enumPtr interface{}) {
 	dataVal := reflect.ValueOf(enumPtr)
 	if dataVal.Kind() != reflect.Ptr {
-		log.Fatalln("loadEnumData param type need struct ptr")
-		return
+		panic("Enum's type need struct ptr")
 	}
 	dataVal = dataVal.Elem()
 	if dataVal.Kind() != reflect.Struct {
-		log.Fatalln("loadEnumData param type need struct ptr")
-		return
+		panic("Enum's type need struct ptr")
 	}
 
 	for i := 0; i < dataVal.NumField(); i++ {
@@ -43,12 +40,12 @@ func loadEnumData(enumPtr interface{}) {
 		text := dataVal.Type().Field(i).Tag.Get("text")
 
 		if dataVal.Type().Field(i).Type.Kind() != reflect.Struct {
-			log.Fatalln("loadEnumData Field type need Elem[int | string]")
+			panic("Enum Field type need Elem[int | string]")
 		}
 
 		eType, ok := dataVal.Type().Field(i).Type.FieldByName("Code")
 		if !ok {
-			log.Fatalln("loadEnumData Field type need Elem[int | string]")
+			panic("Enum Field type need Elem[int | string]")
 		}
 
 		var v interface{}
@@ -56,7 +53,7 @@ func loadEnumData(enumPtr interface{}) {
 		case reflect.Int:
 			i, err := util.Str2Int[int](code)
 			if err != nil {
-				log.Fatalln(err)
+				panic(err)
 			}
 
 			v = Elem[int]{
@@ -69,7 +66,7 @@ func loadEnumData(enumPtr interface{}) {
 				Text: text,
 			}
 		default:
-			log.Fatalln("loadEnumData Field type need Elem[int | string]")
+			panic("EnumData Field type need Elem[int | string]")
 		}
 
 		dataVal.Field(i).Set(reflect.ValueOf(v))
@@ -89,12 +86,12 @@ func Code2Text[T elemType](enumPtr interface{}) map[T]string {
 	m := map[T]string{}
 	for i := 0; i < dataVal.NumField(); i++ {
 		if dataVal.Type().Field(i).Type.Kind() != reflect.Struct {
-			log.Fatalln("Code2Text Field type need Elem[int | string]")
+			panic("Code2Text Field type need Elem[int | string]")
 		}
 
 		enumType, ok := dataVal.Type().Field(i).Type.FieldByName("Code")
 		if !ok {
-			log.Fatalln("Code2Text Field type need Elem[int | string]")
+			panic("Code2Text Field type need Elem[int | string]")
 		}
 
 		switch enumType.Type.Kind() {
@@ -129,12 +126,12 @@ func ID2NameList(enumPtr interface{}) []map[string]interface{} {
 	var arr []map[string]interface{}
 	for i := 0; i < dataVal.NumField(); i++ {
 		if dataVal.Type().Field(i).Type.Kind() != reflect.Struct {
-			log.Fatalln("ID2NameList Field type need Elem[int | string]")
+			panic("ID2NameList Field type need Elem[int | string]")
 		}
 
 		enumType, ok := dataVal.Type().Field(i).Type.FieldByName("Code")
 		if !ok {
-			log.Fatalln("ID2NameList Field type need Elem[int | string]")
+			panic("ID2NameList Field type need Elem[int | string]")
 		}
 
 		switch enumType.Type.Kind() {
@@ -170,12 +167,12 @@ func CodeSet[T elemType](enumPtr interface{}) set.Set[T] {
 	s := set.New[T]()
 	for i := 0; i < dataVal.NumField(); i++ {
 		if dataVal.Type().Field(i).Type.Kind() != reflect.Struct {
-			log.Fatalln("Code2TextForInt Field type need Elem[int | string]")
+			panic("Code2TextForInt Field type need Elem[int | string]")
 		}
 
 		enumType, ok := dataVal.Type().Field(i).Type.FieldByName("Code")
 		if !ok {
-			log.Fatalln("Code2TextForInt Field type need Elem[int | string]")
+			panic("Code2TextForInt Field type need Elem[int | string]")
 		}
 
 		switch enumType.Type.Kind() {

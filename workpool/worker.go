@@ -43,11 +43,9 @@ func (w *worker) startWorker(wp *data) {
 			wp.WorkerQueue <- w
 			select {
 			case job := <-w.jobData:
-				// logtool.Printf("worker: %s, will execute taskfunc.\n", w.WorkID)
 				w.safeFunc(job)
 			case q := <-w.quit:
 				if q {
-					// logtool.Printf("worker: %s, will stop.\n", w.WorkID)
 					return
 				}
 			}

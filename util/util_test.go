@@ -310,3 +310,11 @@ func TestMerge(t *testing.T) {
 	s2 := string(CharMerge(s, byte('/')))
 	fmt.Println(s2)
 }
+
+func TestCast(t *testing.T) {
+	m := map[string]interface{}{
+		"test": "1",
+	}
+	m2, _ := Cast[map[string]string](&m)
+	fmt.Println(m2)
+}

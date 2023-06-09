@@ -4,9 +4,7 @@ package util
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math/rand"
-	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,7 +21,7 @@ func Map2JSON[K comparable, V any](m map[K]V) (string, error) {
 	return string(mapJSON), nil
 }
 
-func Interface2JSON(i interface{}) (string, error) {
+func Any2JSON(i any) (string, error) {
 	interfaceJSON, err := json.Marshal(i)
 	if err != nil {
 		return "", err
@@ -114,6 +112,10 @@ func Str2Bool(s string) (bool, error) {
 	return b, nil
 }
 
+func BoolToStr(b bool) string {
+	return strconv.FormatBool(b)
+}
+
 type floatType interface {
 	~float32 | ~float64
 }
@@ -129,10 +131,6 @@ func Str2Float[T floatType](s string) (T, error) {
 
 func FloatToStr[T floatType](f T) string {
 	return strconv.FormatFloat(float64(f), 'f', -1, 64)
-}
-
-func BoolToStr(b bool) string {
-	return strconv.FormatBool(b)
 }
 
 func StartWith(s string, sub string, ignoreCase bool) (found bool) {
@@ -276,11 +274,11 @@ func Difference[T comparable](arr1 []T, arr2 []T) []T {
 func JoinArr[T any](arr []T, linkStr string) string {
 	var ret strings.Builder
 	if len(arr) >= 1 {
-		ret.WriteString(InterfaceToString(arr[0]))
+		ret.WriteString(Any2String(arr[0]))
 	}
 	for i, lenArr := 1, len(arr); i < lenArr; i++ {
 		ret.WriteString(linkStr)
-		ret.WriteString(InterfaceToString(arr[i]))
+		ret.WriteString(Any2String(arr[i]))
 	}
 	return ret.String()
 }
@@ -297,11 +295,10 @@ func GetMapValue[K comparable, V any](raw map[K]V, key K, def V) V {
 	return def
 }
 
-// InterfaceToString 任意数据转string
-func InterfaceToString(v interface{}) (ret string) {
+// Any2String 任意数据转string
+func Any2String(v any) (ret string) {
 	defer func() {
 		if p := recover(); p != nil {
-			log.Println(debug.Stack())
 			ret = ""
 		}
 	}()
@@ -370,14 +367,14 @@ func MergeMap[K comparable, V any](data ...map[K]V) map[K]V {
 	return raw
 }
 
-// Interface2Interface 数据结构转换
-func Interface2Interface(data interface{}, obj interface{}) error {
-	marshal, err := json.Marshal(data)
+// Any2Any 数据结构转换
+func Any2Any(raw any, target any) error {
+	marshal, err := json.Marshal(raw)
 	if err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(marshal, obj)
+	err = json.Unmarshal(marshal, target)
 	if err != nil {
 		return err
 	}
@@ -404,12 +401,12 @@ func ParamsSorted[V any](params map[string]V) string {
 		if ii == 0 {
 			ret.WriteString(k)
 			ret.WriteByte('=')
-			ret.WriteString(InterfaceToString(params[k]))
+			ret.WriteString(Any2String(params[k]))
 		} else {
 			ret.WriteByte('&')
 			ret.WriteString(k)
 			ret.WriteByte('=')
-			ret.WriteString(InterfaceToString(params[k]))
+			ret.WriteString(Any2String(params[k]))
 		}
 	}
 
@@ -479,7 +476,7 @@ func RandomInt64(min, max int64) int64 {
 	return r + min
 }
 
-// HumpFormatToUnderLine 驼峰转下滑线命名
+// HumpFormatToUnderLine 驼峰转下划线命名
 func HumpFormatToUnderLine(s string) string {
 	lowerStr := strings.ToLower(s)
 	var index []int
@@ -507,7 +504,7 @@ func HumpFormatToUnderLine(s string) string {
 
 // MapHumpFormatToUnderLine map key 驼峰转下滑线命名
 func MapHumpFormatToUnderLine[V any](raw map[string]V) map[string]V {
-	newMap := map[string]V{}
+	newMap := make(map[string]V, len(raw))
 	for k, v := range raw {
 		newMap[HumpFormatToUnderLine(k)] = v
 	}
@@ -570,7 +567,6 @@ func SafeGo(f func()) {
 	go func() {
 		defer func() {
 			if p := recover(); p != nil {
-				log.Printf("%v", p)
 			}
 		}()
 
@@ -597,4 +593,13 @@ func CharMerge[T char](s string, ch T) []T {
 		}
 	}
 	return str
+}
+
+func Cast[T any](raw any) (*T, error) {
+	var t T
+	err := Any2Any(raw, &t)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
