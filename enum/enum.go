@@ -7,11 +7,11 @@ import (
 	"github.com/assembly-hub/basics/util"
 )
 
-type elemType interface {
+type ElemType interface {
 	int | string
 }
 
-type Elem[T elemType] struct {
+type Elem[T ElemType] struct {
 	Code T
 	Text string
 }
@@ -73,7 +73,7 @@ func loadEnumData(enumPtr interface{}) {
 	}
 }
 
-func Code2Text[T elemType](enumPtr interface{}) map[T]string {
+func Code2Text[T ElemType](enumPtr interface{}) map[T]string {
 	dataVal := reflect.ValueOf(enumPtr)
 	if dataVal.Kind() != reflect.Ptr {
 		panic("Code2TextForInt param type need struct ptr")
@@ -154,7 +154,7 @@ func ID2NameList(enumPtr interface{}) []map[string]interface{} {
 	return arr
 }
 
-func CodeSet[T elemType](enumPtr interface{}) set.Set[T] {
+func CodeSet[T ElemType](enumPtr interface{}) set.Set[T] {
 	dataVal := reflect.ValueOf(enumPtr)
 	if dataVal.Kind() != reflect.Ptr {
 		panic("Code2TextForInt param type need struct ptr")
