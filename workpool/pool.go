@@ -35,6 +35,8 @@ type WorkPool interface {
 	OpenFinishNotify()
 	// WatchFinishNotify 监听通知，开启之后需要监听，否则死锁
 	WatchFinishNotify() <-chan struct{}
+	// BlockWaitFinishNotify 监听通知，开启之后需要监听，否则死锁
+	BlockWaitFinishNotify()
 }
 
 // NewWorkPool 初始化work pool
@@ -85,6 +87,13 @@ func (w *data) WatchFinishNotify() <-chan struct{} {
 		panic("please first call OpenFinishNotify, then call WatchFinishNotify")
 	}
 	return w.finishNotify
+}
+
+func (w *data) BlockWaitFinishNotify() {
+	select {
+	case <-w.WatchFinishNotify():
+		return
+	}
 }
 
 func (w *data) sendFinishNotify() {
