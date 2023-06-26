@@ -31,3 +31,29 @@ func TestNewWorkPool(t *testing.T) {
 	wp.ShutDownPool()
 	fmt.Println("done")
 }
+
+func TestNewWorkPool2(t *testing.T) {
+	wp := NewWorkPool(10, "test", 0, 50)
+	for i := 0; i < 100; i++ {
+		wp.SubmitJob(&JobBag{
+			JobFunc: func(i ...interface{}) {
+				if i[0].(int)%2 == 0 {
+					// panic(fmt.Errorf("1111111111111"))
+				}
+				fmt.Println("------------", i[0])
+				// time.Sleep(time.Second * 1)
+
+			},
+			Params: []interface{}{i},
+		})
+	}
+
+	wp.OpenFinishNotify()
+	select {
+	case <-wp.WatchFinishNotify():
+		fmt.Println("finished")
+	}
+
+	wp.ShutDownPool()
+	fmt.Println("done")
+}

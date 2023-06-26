@@ -10,7 +10,7 @@ import (
 type worker struct {
 	WorkID            string
 	jobData           chan *JobBag
-	quit              chan bool
+	quit              chan struct{}
 	executeIntervalMS int64
 	safeFunc          func(job *JobBag)
 }
@@ -18,7 +18,7 @@ type worker struct {
 func newWork(workID string, executeIntervalMS int64) *worker {
 	w := new(worker)
 	w.WorkID = workID
-	w.quit = make(chan bool)
+	w.quit = make(chan struct{})
 	w.jobData = make(chan *JobBag)
 	w.executeIntervalMS = executeIntervalMS
 	w.safeFunc = func(job *JobBag) {
@@ -41,13 +41,12 @@ func (w *worker) startWorker(wp *data) {
 	go func() {
 		for {
 			wp.WorkerQueue <- w
+			wp.sendFinishNotify()
 			select {
 			case job := <-w.jobData:
 				w.safeFunc(job)
-			case q := <-w.quit:
-				if q {
-					return
-				}
+			case <-w.quit:
+				return
 			}
 			if w.executeIntervalMS > 0 {
 				time.Sleep(time.Duration(w.executeIntervalMS) * time.Millisecond)
@@ -57,6 +56,6 @@ func (w *worker) startWorker(wp *data) {
 }
 
 func (w *worker) stopWorker() {
-	w.quit <- true
+	w.quit <- struct{}{}
 	close(w.jobData)
 }

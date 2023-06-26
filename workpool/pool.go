@@ -12,8 +12,9 @@ type data struct {
 	poolName        string
 	jobQueue        chan *JobBag
 	jobQueueMaxSize int
-	quit            chan bool
+	quit            chan struct{}
 	isShutDown      bool
+	finishNotify    chan struct{}
 }
 
 type WorkPool interface {
@@ -29,6 +30,11 @@ type WorkPool interface {
 	IsShutDownPool() bool
 	// IsFinished get pool execute info, true is finished false is running
 	IsFinished() bool
+
+	// OpenFinishNotify 开启任务完成通知，开启之后需要 WatchFinishNotify 监听，否则死锁
+	OpenFinishNotify()
+	// WatchFinishNotify 监听通知，开启之后需要监听，否则死锁
+	WatchFinishNotify() <-chan struct{}
 }
 
 // NewWorkPool 初始化work pool
@@ -56,7 +62,7 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 	}
 	wp.jobQueue = make(chan *JobBag, wp.jobQueueMaxSize)
 
-	wp.quit = make(chan bool)
+	wp.quit = make(chan struct{})
 
 	for i := 0; i < maxPoolSize; i++ {
 		worker := newWork(fmt.Sprintf("%s-%d", poolName, i), executeIntervalMS)
@@ -66,6 +72,27 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 
 	wp.jobQueueManager()
 	return wp
+}
+
+func (w *data) OpenFinishNotify() {
+	if w.finishNotify == nil {
+		w.finishNotify = make(chan struct{})
+	}
+}
+
+func (w *data) WatchFinishNotify() <-chan struct{} {
+	if w.finishNotify == nil {
+		panic("please first call OpenFinishNotify, then call WatchFinishNotify")
+	}
+	return w.finishNotify
+}
+
+func (w *data) sendFinishNotify() {
+	if w.finishNotify != nil {
+		if len(w.jobQueue) == 0 && len(w.WorkerQueue) == cap(w.WorkerQueue) {
+			w.finishNotify <- struct{}{}
+		}
+	}
 }
 
 func (w *data) jobQueueManager() {
@@ -79,10 +106,8 @@ func (w *data) jobQueueManager() {
 			case job := <-w.jobQueue:
 				worker := <-w.WorkerQueue
 				worker.jobData <- job
-			case q := <-w.quit:
-				if q {
-					return
-				}
+			case <-w.quit:
+				return
 			}
 		}
 	}()
@@ -126,11 +151,14 @@ func (w *data) SubmitJob(job ...*JobBag) {
 func (w *data) ShutDownPool() {
 	w.isShutDown = true
 
-	w.quit <- true
+	w.quit <- struct{}{}
 	for i := 0; i < len(w.WorkerList); i++ {
 		w.WorkerList[i].stopWorker()
 	}
 
 	close(w.WorkerQueue)
 	close(w.jobQueue)
+	if w.finishNotify != nil {
+		close(w.finishNotify)
+	}
 }
