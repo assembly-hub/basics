@@ -48,11 +48,8 @@ func TestNewWorkPool2(t *testing.T) {
 		})
 	}
 
-	wp.OpenFinishNotify()
-	select {
-	case <-wp.WatchFinishNotify():
-		fmt.Println("finished")
-	}
+	wp.WaitFinish()
+	fmt.Println("finished")
 
 	wp.ShutDownPool()
 	fmt.Println("done")

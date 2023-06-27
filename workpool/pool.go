@@ -31,12 +31,8 @@ type WorkPool interface {
 	// IsFinished get pool execute info, true is finished false is running
 	IsFinished() bool
 
-	// OpenFinishNotify 开启任务完成通知，开启之后需要 WatchFinishNotify 监听，否则死锁
-	OpenFinishNotify()
-	// WatchFinishNotify 监听通知，开启之后需要监听，否则死锁
-	WatchFinishNotify() <-chan struct{}
-	// BlockWaitFinishNotify 监听通知，开启之后需要监听，否则死锁
-	BlockWaitFinishNotify()
+	// WaitFinish 等待任务完成通知
+	WaitFinish()
 }
 
 // NewWorkPool 初始化work pool
@@ -65,6 +61,7 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 	wp.jobQueue = make(chan *JobBag, wp.jobQueueMaxSize)
 
 	wp.quit = make(chan struct{})
+	wp.finishNotify = make(chan struct{})
 
 	for i := 0; i < maxPoolSize; i++ {
 		worker := newWork(fmt.Sprintf("%s-%d", poolName, i), executeIntervalMS)
@@ -76,30 +73,28 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 	return wp
 }
 
-func (w *data) OpenFinishNotify() {
+func (w *data) watchFinishNotify() <-chan struct{} {
 	if w.finishNotify == nil {
 		w.finishNotify = make(chan struct{})
-	}
-}
-
-func (w *data) WatchFinishNotify() <-chan struct{} {
-	if w.finishNotify == nil {
-		panic("please first call OpenFinishNotify, then call WatchFinishNotify")
 	}
 	return w.finishNotify
 }
 
-func (w *data) BlockWaitFinishNotify() {
+func (w *data) WaitFinish() {
 	select {
-	case <-w.WatchFinishNotify():
+	case <-w.watchFinishNotify():
 		return
 	}
 }
 
 func (w *data) sendFinishNotify() {
-	if w.finishNotify != nil {
-		if len(w.jobQueue) == 0 && len(w.WorkerQueue) == cap(w.WorkerQueue) {
-			w.finishNotify <- struct{}{}
+	if len(w.jobQueue) == 0 && len(w.WorkerQueue) == cap(w.WorkerQueue) {
+		defer func() {
+			_ = recover()
+		}()
+		select {
+		case w.finishNotify <- struct{}{}:
+		default:
 		}
 	}
 }
@@ -167,7 +162,5 @@ func (w *data) ShutDownPool() {
 
 	close(w.WorkerQueue)
 	close(w.jobQueue)
-	if w.finishNotify != nil {
-		close(w.finishNotify)
-	}
+	close(w.finishNotify)
 }
