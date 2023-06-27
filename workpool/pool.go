@@ -73,16 +73,9 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 	return wp
 }
 
-func (w *data) watchFinishNotify() <-chan struct{} {
-	if w.finishNotify == nil {
-		w.finishNotify = make(chan struct{})
-	}
-	return w.finishNotify
-}
-
 func (w *data) WaitFinish() {
 	select {
-	case <-w.watchFinishNotify():
+	case <-w.finishNotify:
 		return
 	}
 }

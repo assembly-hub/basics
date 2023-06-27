@@ -41,7 +41,7 @@ func TestNewWorkPool2(t *testing.T) {
 					// panic(fmt.Errorf("1111111111111"))
 				}
 				fmt.Println("------------", i[0])
-				// time.Sleep(time.Second * 1)
+				time.Sleep(time.Second * 1)
 
 			},
 			Params: []interface{}{i},
