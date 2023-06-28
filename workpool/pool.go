@@ -16,7 +16,7 @@ type data struct {
 	quit            chan struct{}
 	isShutDown      bool
 	finishNotify    chan struct{}
-	finishVal       atomic.Bool
+	waitFinishVal   atomic.Bool
 }
 
 type WorkPool interface {
@@ -48,7 +48,7 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 	}
 
 	wp := new(data)
-	wp.finishVal.Store(false)
+	wp.waitFinishVal.Store(false)
 
 	wp.maxPoolSize = maxPoolSize
 	wp.poolName = poolName
@@ -78,9 +78,9 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 }
 
 func (w *data) WaitFinish() {
-	w.finishVal.Store(true)
+	w.waitFinishVal.Store(true)
 	defer func() {
-		w.finishVal.Store(false)
+		w.waitFinishVal.Store(false)
 	}()
 
 	if w.IsFinished() {
@@ -100,7 +100,7 @@ func (w *data) sendFinishNotify() {
 		select {
 		case w.finishNotify <- struct{}{}:
 		default:
-			if w.finishVal.Load() {
+			if w.waitFinishVal.Load() {
 				w.finishNotify <- struct{}{}
 			}
 		}
