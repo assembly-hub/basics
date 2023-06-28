@@ -3,7 +3,6 @@ package workpool
 
 import (
 	"fmt"
-	"sync/atomic"
 )
 
 type data struct {
@@ -16,7 +15,7 @@ type data struct {
 	quit            chan struct{}
 	isShutDown      bool
 	finishNotify    chan struct{}
-	waitFinishVal   atomic.Bool
+	waitFinishVal   bool
 }
 
 type WorkPool interface {
@@ -48,7 +47,7 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 	}
 
 	wp := new(data)
-	wp.waitFinishVal.Store(false)
+	wp.waitFinishVal = false
 
 	wp.maxPoolSize = maxPoolSize
 	wp.poolName = poolName
@@ -78,9 +77,9 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 }
 
 func (w *data) WaitFinish() {
-	w.waitFinishVal.Store(true)
+	w.waitFinishVal = true
 	defer func() {
-		w.waitFinishVal.Store(false)
+		w.waitFinishVal = false
 	}()
 
 	if w.IsFinished() {
@@ -100,7 +99,7 @@ func (w *data) sendFinishNotify() {
 		select {
 		case w.finishNotify <- struct{}{}:
 		default:
-			if w.waitFinishVal.Load() {
+			if w.waitFinishVal {
 				w.finishNotify <- struct{}{}
 			}
 		}
