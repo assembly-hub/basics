@@ -81,6 +81,14 @@ func (w *data) WaitFinish() {
 	select {
 	case <-w.finishNotify:
 		return
+	default:
+		if w.IsFinished() {
+			return
+		}
+		select {
+		case <-w.finishNotify:
+			return
+		}
 	}
 }
 
