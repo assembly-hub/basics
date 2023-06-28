@@ -64,9 +64,9 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 	wp.finishNotify = make(chan struct{})
 
 	for i := 0; i < maxPoolSize; i++ {
-		worker := newWork(fmt.Sprintf("%s-%d", poolName, i), executeIntervalMS)
-		wp.WorkerList = append(wp.WorkerList, worker)
-		worker.startWorker(wp)
+		w := newWork(fmt.Sprintf("%s-%d", poolName, i), executeIntervalMS)
+		wp.WorkerList = append(wp.WorkerList, w)
+		w.startWorker(wp)
 	}
 
 	wp.jobQueueManager()
@@ -81,7 +81,7 @@ func (w *data) WaitFinish() {
 }
 
 func (w *data) sendFinishNotify() {
-	if len(w.jobQueue) == 0 && len(w.WorkerQueue) == cap(w.WorkerQueue) {
+	if w.IsFinished() {
 		defer func() {
 			_ = recover()
 		}()
@@ -94,15 +94,21 @@ func (w *data) sendFinishNotify() {
 
 func (w *data) jobQueueManager() {
 	go func() {
+		defer func() {
+			_ = recover()
+		}()
 		for {
 			if w.isShutDown {
 				return
 			}
 
 			select {
-			case job := <-w.jobQueue:
-				worker := <-w.WorkerQueue
-				worker.jobData <- job
+			case job, ok := <-w.jobQueue:
+				if !ok {
+					return
+				}
+				wk := <-w.WorkerQueue
+				wk.jobData <- job
 			case <-w.quit:
 				return
 			}
@@ -115,7 +121,7 @@ func (w *data) GetPoolIdleSize() int {
 	return len(w.WorkerQueue)
 }
 
-// GetJobQueueIdleSize 获取job队列空闲成都
+// GetJobQueueIdleSize 获取job队列空闲长度
 func (w *data) GetJobQueueIdleSize() int {
 	return cap(w.jobQueue) - len(w.jobQueue)
 }
@@ -126,10 +132,6 @@ func (w *data) IsShutDownPool() bool {
 
 // IsFinished get pool execute info, true is finished false is running
 func (w *data) IsFinished() bool {
-	if w.isShutDown {
-		return true
-	}
-
 	return len(w.jobQueue) == 0 && len(w.WorkerQueue) == cap(w.WorkerQueue)
 }
 
@@ -153,6 +155,7 @@ func (w *data) ShutDownPool() {
 		w.WorkerList[i].stopWorker()
 	}
 
+	close(w.quit)
 	close(w.WorkerQueue)
 	close(w.jobQueue)
 	close(w.finishNotify)

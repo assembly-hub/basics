@@ -39,11 +39,17 @@ func newWork(workID string, executeIntervalMS int64) *worker {
 
 func (w *worker) startWorker(wp *data) {
 	go func() {
+		defer func() {
+			_ = recover()
+		}()
 		for {
 			wp.WorkerQueue <- w
 			wp.sendFinishNotify()
 			select {
-			case job := <-w.jobData:
+			case job, ok := <-w.jobData:
+				if !ok {
+					return
+				}
 				w.safeFunc(job)
 			case <-w.quit:
 				return
