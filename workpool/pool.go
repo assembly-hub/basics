@@ -74,6 +74,10 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 }
 
 func (w *data) WaitFinish() {
+	if w.IsFinished() {
+		return
+	}
+
 	select {
 	case <-w.finishNotify:
 		return
