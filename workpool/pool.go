@@ -64,7 +64,6 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 	wp.jobQueue = make(chan *JobBag, wp.jobQueueMaxSize)
 
 	wp.quit = make(chan struct{})
-	wp.finishNotify = make(chan struct{})
 
 	for i := 0; i < maxPoolSize; i++ {
 		w := newWork(fmt.Sprintf("%s-%d", poolName, i), executeIntervalMS)
@@ -77,32 +76,26 @@ func NewWorkPool(maxPoolSize int, poolName string, executeIntervalMS int64, jobQ
 }
 
 func (w *data) WaitFinish() {
+	w.finishNotify = make(chan struct{})
 	w.waitFinishVal = true
 	defer func() {
 		w.waitFinishVal = false
+		close(w.finishNotify)
 	}()
 
 	if w.IsFinished() {
 		return
 	}
 
-	select {
-	case <-w.finishNotify:
-	}
+	<-w.finishNotify
 }
 
 func (w *data) sendFinishNotify() {
-	if w.IsFinished() {
+	if w.waitFinishVal && w.IsFinished() {
 		defer func() {
 			_ = recover()
 		}()
-		select {
-		case w.finishNotify <- struct{}{}:
-		default:
-			if w.waitFinishVal {
-				w.finishNotify <- struct{}{}
-			}
-		}
+		w.finishNotify <- struct{}{}
 	}
 }
 
@@ -172,5 +165,4 @@ func (w *data) ShutDownPool() {
 	close(w.quit)
 	close(w.WorkerQueue)
 	close(w.jobQueue)
-	close(w.finishNotify)
 }
